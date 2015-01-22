@@ -1,0 +1,16 @@
+{application, mstat, [
+    {description, "Folsom standardization and HTTP interface"},
+    {vsn, git},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        folsom
+    ]},
+    {mod, {mstat_app, []}},
+    {env, [
+        {histogram_window, 10},
+        {port, 9001},
+        {address, {127, 0, 0, 1}}
+    ]}
+]}.
