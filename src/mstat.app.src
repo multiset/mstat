@@ -10,7 +10,7 @@
     {mod, {mstat_app, []}},
     {env, [
         {histogram_window, 10},
-        {port, 9001},
+        {port, 8999},
         {address, {127, 0, 0, 1}}
     ]}
 ]}.
