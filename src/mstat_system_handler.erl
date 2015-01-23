@@ -15,9 +15,38 @@ handle(Req0, State) ->
     {ok, Req1, State}.
 
 procs() ->
-    lists:map(fun proc/1, registered()).
+    {ok, Sups} = application:get_env(mstat, supervisors),
+    lists:map(
+        fun(Name) ->
+            PI0 = proc(whereis(Name)),
+            PI1 = case lists:member(Name, Sups) of
+                false ->
+                    PI0;
+                true ->
+                    [{supervising, supervised_procs(Name)}|PI0]
+            end,
+            {Name, PI1}
+        end,
+        registered()
+    ).
 
-proc(Name) ->
+supervised_procs(Name) ->
+    Children = try
+        [P || {_, P, _, _} <- supervisor:which_children(Name)]
+    catch error:{noproc, _} ->
+        []
+    end,
+    [PI|PIs] = lists:map(fun proc/1, Children),
+    ZipFun = fun
+        ({K, X}, {K, Y}) when is_list(Y) -> {K, [X|Y]};
+        ({K, X}, {K, Y}) -> {K, [X, Y]}
+    end,
+    Zipped = lists:foldl(fun(A, B) -> lists:zipwith(ZipFun, A, B) end, PI, PIs),
+    lists:map(fun({K, Vs}) -> {K, bear:get_statistics(Vs)} end, Zipped).
+
+proc(undefined) ->
+    [];
+proc(Pid) ->
     Keys = [
         binary,
         heap_size,
@@ -34,15 +63,14 @@ proc(Name) ->
         status,
         total_heap_size
     ],
-    PI = process_info(whereis(Name), Keys),
-    Properties = lists:map(
+    PI = process_info(Pid, Keys),
+    lists:map(
         fun(Key) -> {Key, proc_prop(lists:keyfind(Key, 1, PI))} end,
         Keys
-    ),
-    {Name, Properties}.
+    ).
 
 proc_prop({binary, B}) ->
-    [{count, length(B)}, {size, lists:sum([S || {_, S, _} <- B])}];
+    lists:sum([S || {_, S, _} <- B]);
 proc_prop({links, L}) ->
     length(L);
 proc_prop({monitors, M}) ->
