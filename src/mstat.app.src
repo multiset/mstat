@@ -12,6 +12,13 @@
         {supervisors, []},
         {histogram_window, 10},
         {port, 8999},
-        {address, {127, 0, 0, 1}}
+        {address, {127, 0, 0, 1}},
+        {system_monitors, [
+            {long_gc, 50},
+            {long_schedule, 50},
+            {large_heap, 10485760},
+            busy_port,
+            busy_dist_port
+        ]}
     ]}
 ]}.
