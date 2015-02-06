@@ -33,16 +33,16 @@ sample_type(Name, _) ->
 
 
 new_counter(Name) ->
-    folsom_metrics:new_counter(Name).
+    catch folsom_metrics:new_counter(Name).
 
 
 new_gauge(Name) ->
-    folsom_metrics:new_gauge(Name).
+    catch folsom_metrics:new_gauge(Name).
 
 
 new_histogram(Name) ->
     {ok, I} = application:get_env(mstat, histogram_window),
-    folsom_metrics:new_histogram(Name, slide_uniform, {I, 1024}).
+    catch folsom_metrics:new_histogram(Name, slide_uniform, {I, 1024}).
 
 
 decrement_counter(Name) ->
@@ -50,7 +50,11 @@ decrement_counter(Name) ->
 
 
 decrement_counter(Name, Value) ->
-    catch folsom_metrics:notify_existing_metric(Name, {dec, Value}, counter).
+    try folsom_metrics:notify_existing_metric(Name, {dec, Value}, counter)
+    catch error:badarg ->
+        new_counter(Name),
+        folsom_metrics:notify_existing_metric(Name, {dec, Value}, counter)
+    end.
 
 
 increment_counter(Name) ->
@@ -58,15 +62,27 @@ increment_counter(Name) ->
 
 
 increment_counter(Name, Value) ->
-    catch folsom_metrics:notify_existing_metric(Name, {inc, Value}, counter).
+    try folsom_metrics:notify_existing_metric(Name, {inc, Value}, counter)
+    catch error:badarg ->
+        new_counter(Name),
+        catch folsom_metrics:notify_existing_metric(Name, {inc, Value}, counter)
+    end.
 
 
 update_gauge(Name, Value) ->
-    catch folsom_metrics:notify_existing_metric(Name, Value, gauge).
+    try folsom_metrics:notify_existing_metric(Name, Value, gauge)
+    catch error:badarg ->
+        new_gauge(Name),
+        catch folsom_metrics:notify_existing_metric(Name, Value, gauge)
+    end.
 
 
 update_histogram(Name, Value)  ->
-    catch folsom_metrics:notify_existing_metric(Name, Value, histogram).
+    try folsom_metrics:notify_existing_metric(Name, Value, histogram)
+    catch error:badarg ->
+        new_histogram(Name),
+        catch folsom_metrics:notify_existing_metric(Name, Value, histogram)
+    end.
 
 
 timeit(Name, Fun) ->
