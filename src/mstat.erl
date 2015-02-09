@@ -27,7 +27,7 @@ sample(Name) ->
 
 
 sample_type(Name, histogram) ->
-    folsom_metrics:get_histogram_statistics(Name);
+    proplists:delete(histogram, folsom_metrics:get_histogram_statistics(Name));
 sample_type(Name, _) ->
     folsom_metrics:get_metric_value(Name).
 
